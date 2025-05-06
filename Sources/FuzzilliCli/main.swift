@@ -443,7 +443,7 @@ func makeFuzzer(with configuration: Configuration) -> Fuzzer {
         // (ComputedKeyClassDefFuncAssignWrapperMutator(), 1),
         // (CircumventNewGlobalDebuggerOOMMutator(), 1),
         // (FixOptimizeGetIteratorOOMMutator(), 1),
-        (SpiderMonkeySubstringSymbolFixMutator(), 1),
+        // (SpiderMonkeySubstringSymbolFixMutator(), 1),
         // (RemoveDisnativePreCallMutator(), 1),
         // (RemoveCyclicPropertyMutator(), 1),
         // (SpecificBug1878251CircumventionMutator(), 1),
