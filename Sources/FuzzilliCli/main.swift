@@ -400,7 +400,7 @@ func makeFuzzer(with configuration: Configuration) -> Fuzzer {
         (FixTemporalPrototypeCrashMutator(), 1),
         (OomTestDateArrayMutator(), 1),
         (ArgumentsLengthDestructuringMutator(), 1),
-        (InstantiateModuleStencilFixerMutator(), 1),
+        // (InstantiateModuleStencilFixerMutator(), 1),
         (InstructionDescriptor(), 1),
         (StringConcatLoopToArrayJoinMutator(), 1),
         (OomTestRemoverMutator(), 1),
