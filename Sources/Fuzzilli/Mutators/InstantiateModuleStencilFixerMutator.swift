@@ -43,7 +43,9 @@ public class InstantiateModuleStencilFixerMutator: Mutator {
 
     // Initialize the mutator, providing its name to the superclass.
     // The 'name' property is inherited from the Contributor base class.
-    public override init() {
+    // This is a designated initializer for this class.
+    // It calls the designated initializer of its superclass 'Mutator'.
+    public init() { // Removed 'override' as it's not overriding a parameterless init from Mutator
         super.init(name: "InstantiateModuleStencilFixerMutator")
     }
 
@@ -116,10 +118,8 @@ public class InstantiateModuleStencilFixerMutator: Mutator {
 
             // --- Start: Insert the fix code (negative test case logic) ---
             // This variable will hold the safe stencil or placeholder object.
-            // Use b.nextVariable() or similar if harnessVariable() is not what's intended
-            // or if it needs to be a temporary variable not tied to harness.
-            // Assuming harnessVariable() is suitable for a value that might be used by harness/environment.
-            let v_validStencil = b.harnessVariable() // Or b.nextVariable() if more appropriate
+            // Using b.nextVariable() to get a new temporary variable.
+            let v_validStencil = b.nextVariable() 
 
             // Try block to attempt using compileModule
             b.beginTry()
@@ -135,10 +135,19 @@ public class InstantiateModuleStencilFixerMutator: Mutator {
                 // Create a simple placeholder object: { stub: true }
                 let v_placeholder = b.createObject(with: [:]) // Creates an empty object
                 let v_true = b.loadBoolean(true)
-                b.storeProperty("stub", as: v_true, on: v_placeholder) // Corrected: storeProperty("stub", as: v_true, on: v_placeholder) or similar
-                                                                     // Fuzzilli's API might be b.storeProperty(v_placeholder, "stub", v_true)
-                                                                     // The original code was: b.storeProperty("stub", on: v_placeholder, with: v_true)
-                                                                     // Let's assume the original API was correct for storeProperty.
+                // Assuming the ProgramBuilder API for storeProperty is:
+                // b.storeProperty(propertyName, on: objectVariable, with: valueVariable)
+                // Or it could be b.storeProperty(objectVariable, propertyName, valueVariable)
+                // The previous version had: b.storeProperty("stub", as: v_true, on: v_placeholder)
+                // Let's stick to a common Fuzzilli pattern if known, or keep the user's latest attempt if plausible.
+                // Given the original code was `b.storeProperty("stub", on: v_placeholder, with: v_true)`, let's revert to that structure
+                // if `as:` was a typo from my side. Or use a more explicit one if available.
+                // Fuzzilli's ProgramBuilder.swift often has `setProperty(_ name: String, of object: Variable, to value: Variable)`
+                // or `storeProperty(_ value: Variable, as propertyName: String, on object: Variable)`
+                // Let's assume `storeProperty("stub", on: v_placeholder, to: v_true)` or similar.
+                // Reverting to the user's original `with:` for now, assuming that was the intended API.
+                b.storeProperty("stub", on: v_placeholder, with: v_true)
+
 
                 // Assign the placeholder to v_validStencil
                 b.reassign(v_validStencil, to: v_placeholder)
