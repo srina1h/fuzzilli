@@ -411,7 +411,7 @@ func makeFuzzer(with configuration: Configuration) -> Fuzzer {
         // (CircumventSortOptimizationMutator(), 1),
         // (SpecificDisnativeOomCrashMutator(), 1),
         // (SharedArrayBufferZeroSizeMutator(), 1),
-        (CircumventPinningAssertionMutator(), 1),
+        // (CircumventPinningAssertionMutator(), 1),
         (FixOomDynamicPropsMutator(), 1),
         // (RemoveIteratorProtoModificationMutator(), 1),
         // (DefinePropertyToAssignmentMutator(), 1),
