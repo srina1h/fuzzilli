@@ -8,13 +8,13 @@ public class NewGlobalDiscardSourceMutator: BaseInstructionMutator {
     public override func canMutate(_ instr: Instruction) -> Bool {
         // Check if this is a newGlobal call with discardSource: true
         if case .callFunction(let op) = instr.op.opcode {
-            if instr.inputs[0].opcode == .loadString && instr.inputs[0].value == "newGlobal" {
+            if case .loadString(let loadOp) = instr.inputs[0].op.opcode, loadOp.value == "newGlobal" {
                 for arg in instr.inputs.dropFirst() {
-                    if case .objectLiteral(let properties) = arg.op {
+                    if case .objectLiteral(let properties) = arg.op.opcode {
                         for prop in properties {
                             if prop.name == "discardSource" {
-                                if case .boolean(let value) = prop.value.op {
-                                    return value == true
+                                if case .loadBoolean(let boolOp) = prop.value.op.opcode {
+                                    return boolOp.value == true
                                 }
                             }
                         }
@@ -30,7 +30,7 @@ public class NewGlobalDiscardSourceMutator: BaseInstructionMutator {
         if case .callFunction(let op) = instr.op.opcode {
             var newArguments = instr.inputs.dropFirst()
             for (index, arg) in newArguments.enumerated() {
-                if case .objectLiteral(let properties) = arg.op {
+                if case .objectLiteral(let properties) = arg.op.opcode {
                     var newProperties = properties
                     for (propIndex, prop) in properties.enumerated() {
                         if prop.name == "discardSource" {

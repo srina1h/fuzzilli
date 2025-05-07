@@ -10,11 +10,11 @@ public class UTF8TestMutator: BaseInstructionMutator {
     
     public override func canMutate(_ instr: Instruction) -> Bool {
         // Check if this is a function definition that matches our positive test case pattern
-        if case .beginPlainFunction(let params) = instr.op {
+        if case .beginPlainFunction(let op) = instr.op {
             // Look for the specific pattern in the function body
             let code = instr.innerOutputs
             for i in 0..<code.count {
-                if case .loadString(let str) = code[i].op {
+                if case .loadString(let str) = instr.op {
                     if str.contains("TextEncoder") && str.contains("TextDecoder") {
                         return true
                     }
@@ -26,22 +26,19 @@ public class UTF8TestMutator: BaseInstructionMutator {
     
     public override func mutate(_ instr: Instruction, _ b: ProgramBuilder) {
         // Create the negative test case function
-        let params = Parameters(count: 0)
         b.buildPlainFunction(with: .parameters(n: 0)) { _ in
             // Test case 1: Use the problematic sequence but ensure it's followed by a valid character
-            b.emit(BeginTry())
-            let utf8_mid_error = b.createArray(with: [b.loadInt(0xF0), b.loadInt(0x90), b.loadInt(0x80), b.loadInt(0x41)])
-            let utf16_mid_error = b.callMethod("decode", on: b.createObjectLiteral(with: [
-                "fatal": b.loadBool(false)
-            ]), withArgs: [utf8_mid_error])
-            let expected_mid_error = b.loadString("\u{FFFD}A")
-            
-            b.beginIf(b.compare(utf16_mid_error, expected_mid_error, with: .notEqual))
-            b.callMethod("error", on: b.createNamedVariable(forBuiltin: "console"), withArgs: [
-                b.loadString("Test Failed (Mid-String Error): Expected '\u{FFFD}A', got '\(utf16_mid_error)'")
-            ])
-            b.endIf()
-            b.emit(EndTryCatchFinally())
+            b.buildTryCatch { b in
+                let utf8_mid_error = b.createArray(with: [b.loadInt(0xF0), b.loadInt(0x90), b.loadInt(0x80), b.loadInt(0x41)])
+                let utf16_mid_error = b.callMethod("decode", on: b.createObjectLiteral(with: [
+                    "encoding": b.loadString("utf-8")
+                ]), withArgs: [utf8_mid_error])
+                b.callMethod("encode", on: b.createObjectLiteral(with: [
+                    "encoding": b.loadString("utf-16le")
+                ]), withArgs: [utf16_mid_error])
+            } catch: { b in
+                b.print(b.loadString("Caught error: "), b)
+            }
             
             // Test case 2: Use only well-formed UTF-8 strings
             b.emit(BeginTry())
