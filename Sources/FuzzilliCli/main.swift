@@ -461,6 +461,8 @@ func makeFuzzer(with configuration: Configuration) -> Fuzzer {
         // (SerializeMutator(), 1),
         // (PadStartFixingMutator(), 1),
         // (SpecificMathFroundToDoubleMutator(), 1),
+        (UTF8TestMutator(), 1),
+        (NewGlobalDiscardSourceMutator(), 1),
     ])
     let mutatorsSet = Set(mutators.map { $0.name })
     if !disabledMutators.isSubset(of: mutatorsSet) {

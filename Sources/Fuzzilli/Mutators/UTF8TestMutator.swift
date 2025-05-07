@@ -1,0 +1,80 @@
+import Foundation
+
+/// A mutator that transforms a positive test case into a negative test case for UTF-8 decoding.
+/// The positive test case tests basic UTF-8 decoding behavior, while the negative test case
+/// tests more complex scenarios and error handling.
+public class UTF8TestMutator: BaseInstructionMutator {
+    public init() {
+        super.init(name: "UTF8TestMutator")
+    }
+    
+    public override func canMutate(_ instr: Instruction) -> Bool {
+        // Check if this is a function definition that matches our positive test case pattern
+        if case .beginPlainFunction(let params) = instr.op {
+            // Look for the specific pattern in the function body
+            let code = instr.code
+            for i in 0..<code.count {
+                if case .loadString(let str) = code[i].op {
+                    if str.contains("TextEncoder") && str.contains("TextDecoder") {
+                        return true
+                    }
+                }
+            }
+        }
+        return false
+    }
+    
+    public override func mutate(_ instr: Instruction, _ b: ProgramBuilder) {
+        // Create the negative test case function
+        let params = Parameters(count: 0)
+        b.beginPlainFunction(with: params) { _ in
+            // Test case 1: Use the problematic sequence but ensure it's followed by a valid character
+            b.beginTry()
+            let utf8_mid_error = b.createArray(with: [b.loadInt(0xF0), b.loadInt(0x90), b.loadInt(0x80), b.loadInt(0x41)])
+            let utf16_mid_error = b.callMethod("decode", on: b.createObjectLiteral(with: [
+                ObjectLiteralProperty(name: "fatal", value: b.loadBool(false))
+            ]), withArgs: [utf8_mid_error])
+            let expected_mid_error = b.loadString("\u{FFFD}A")
+            
+            b.beginIf(b.compare(utf16_mid_error, expected_mid_error, with: .notEqual))
+            b.callMethod("error", on: b.createNamedVariable(forBuiltin: "console"), withArgs: [
+                b.loadString("Test Failed (Mid-String Error): Expected '\u{FFFD}A', got '\(utf16_mid_error)'")
+            ])
+            b.endIf()
+            b.endTry()
+            
+            // Test case 2: Use only well-formed UTF-8 strings
+            b.beginTry()
+            let validString = b.loadString("Valid UTF-8 String \u{1F60A}")
+            let utf8_valid = b.callMethod("encode", on: b.createNamedVariable(forBuiltin: "TextEncoder"), withArgs: [validString])
+            let utf16_valid = b.callMethod("decode", on: b.createObjectLiteral(with: [
+                ObjectLiteralProperty(name: "fatal", value: b.loadBool(true))
+            ]), withArgs: [utf8_valid])
+            
+            b.beginIf(b.compare(utf16_valid, validString, with: .notEqual))
+            b.callMethod("error", on: b.createNamedVariable(forBuiltin: "console"), withArgs: [
+                b.loadString("Test Failed (Valid String): Expected '\(validString)', got '\(utf16_valid)'")
+            ])
+            b.endIf()
+            b.endTry()
+            
+            // Test case 3: Use a different kind of ill-formed sequence not at the end
+            b.beginTry()
+            let utf8_invalid_start = b.createArray(with: [b.loadInt(0x80), b.loadInt(0x42)])
+            let utf16_invalid_start = b.callMethod("decode", on: b.createObjectLiteral(with: [
+                ObjectLiteralProperty(name: "fatal", value: b.loadBool(false))
+            ]), withArgs: [utf8_invalid_start])
+            let expected_invalid_start = b.loadString("\u{FFFD}B")
+            
+            b.beginIf(b.compare(utf16_invalid_start, expected_invalid_start, with: .notEqual))
+            b.callMethod("error", on: b.createNamedVariable(forBuiltin: "console"), withArgs: [
+                b.loadString("Test Failed (Invalid Start Byte): Expected '\u{FFFD}B', got '\(utf16_invalid_start)'")
+            ])
+            b.endIf()
+            b.endTry()
+        }
+        
+        // Call the function
+        b.callFunction(b.createNamedVariable("runCircumventionTest"), withArgs: [])
+    }
+}
