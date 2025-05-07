@@ -7,7 +7,7 @@ public class NewGlobalDiscardSourceMutator: BaseInstructionMutator {
     
     public override func canMutate(_ instr: Instruction) -> Bool {
         // Check if this is a newGlobal call with discardSource: true
-        if case .callFunction(let op) = instr.op {
+        if case .callFunction(let op) = instr.op.opcode {
             if instr.inputs[0].opcode == .loadString && instr.inputs[0].value == "newGlobal" {
                 for arg in instr.inputs.dropFirst() {
                     if case .objectLiteral(let properties) = arg.op {
@@ -27,7 +27,7 @@ public class NewGlobalDiscardSourceMutator: BaseInstructionMutator {
     
     public override func mutate(_ instr: Instruction, _ b: ProgramBuilder) {
         // Replace the newGlobal call with discardSource: false
-        if case .callFunction(let op) = instr.op {
+        if case .callFunction(let op) = instr.op.opcode {
             var newArguments = instr.inputs.dropFirst()
             for (index, arg) in newArguments.enumerated() {
                 if case .objectLiteral(let properties) = arg.op {

@@ -27,7 +27,7 @@ public class UTF8TestMutator: BaseInstructionMutator {
     public override func mutate(_ instr: Instruction, _ b: ProgramBuilder) {
         // Create the negative test case function
         let params = Parameters(count: 0)
-        b.emit(BeginPlainFunction(parameters: params)) { _ in
+        b.buildPlainFunction(with: .parameters(n: 0)) { _ in
             // Test case 1: Use the problematic sequence but ensure it's followed by a valid character
             b.emit(BeginTry())
             let utf8_mid_error = b.createArray(with: [b.loadInt(0xF0), b.loadInt(0x90), b.loadInt(0x80), b.loadInt(0x41)])
@@ -41,7 +41,7 @@ public class UTF8TestMutator: BaseInstructionMutator {
                 b.loadString("Test Failed (Mid-String Error): Expected '\u{FFFD}A', got '\(utf16_mid_error)'")
             ])
             b.endIf()
-            b.emit(EndTry())
+            b.emit(EndTryCatchFinally())
             
             // Test case 2: Use only well-formed UTF-8 strings
             b.emit(BeginTry())
@@ -56,7 +56,7 @@ public class UTF8TestMutator: BaseInstructionMutator {
                 b.loadString("Test Failed (Valid String): Expected '\(validString)', got '\(utf16_valid)'")
             ])
             b.endIf()
-            b.emit(EndTry())
+            b.emit(EndTryCatchFinally())
             
             // Test case 3: Use a different kind of ill-formed sequence not at the end
             b.emit(BeginTry())
@@ -71,7 +71,7 @@ public class UTF8TestMutator: BaseInstructionMutator {
                 b.loadString("Test Failed (Invalid Start Byte): Expected '\u{FFFD}B', got '\(utf16_invalid_start)'")
             ])
             b.endIf()
-            b.emit(EndTry())
+            b.emit(EndTryCatchFinally())
         }
         
         // Call the function
