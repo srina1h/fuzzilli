@@ -396,6 +396,7 @@ func makeFuzzer(with configuration: Configuration) -> Fuzzer {
         (CombineMutator(),                     1),
         // Include this once it does more than just remove unneeded try-catch
         // (FixupMutator()),                   1),
+
     ])
     let mutatorsSet = Set(mutators.map { $0.name })
     if !disabledMutators.isSubset(of: mutatorsSet) {
